@@ -1,0 +1,10 @@
+project_a/client/node_modules/
+project_a/client/package-lock.json
+project_a/server/node_modules/
+project_a/server/package-lock.json
+project_b/client/node_modules/
+project_b/client/package-lock.json
+project_b/server/node_modules/
+project_b/server/package-lock.json
+project_a/server/.env
+project_b/server/.env
