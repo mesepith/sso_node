@@ -5,10 +5,29 @@ function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // In a real app, check if the user is logged in on component mount
-    setUser({ id: '1', username: 'user' });
-    setLoading(false);
+    // Check if the user is logged in on component mount
+    checkAuthStatus();
   }, []);
+
+  const checkAuthStatus = async () => {
+    try {
+      const response = await fetch('http://localhost:3001/api/auth/status', {
+        credentials: 'include'
+      });
+      const data = await response.json();
+      
+      if (data.isLoggedIn) {
+        setUser(data.user);
+      } else {
+        setUser(null);
+      }
+      
+      setLoading(false);
+    } catch (error) {
+      console.error('Auth status check error:', error);
+      setLoading(false);
+    }
+  };
 
   const handleLogin = async (event) => {
     event.preventDefault();

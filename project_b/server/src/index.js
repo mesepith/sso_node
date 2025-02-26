@@ -48,8 +48,15 @@ initializeOidcClient();
 // Silent authentication endpoint
 app.get('/api/silent-auth', async (req, res) => {
   try {
-    // In a real implementation, this would check with Project A if the user is already logged in
-    const response = await axios.get('http://localhost:3001/api/auth/status');
+    // Forward cookies from the client to Project A to check if user is already logged in
+    const cookies = req.headers.cookie;
+    
+    // Check with Project A if the user is already logged in
+    const response = await axios.get('http://localhost:3001/api/auth/status', {
+      headers: {
+        Cookie: cookies || ''  // Forward cookies to maintain session
+      }
+    });
     
     if (response.data.isLoggedIn) {
       // User is already logged in to Project A

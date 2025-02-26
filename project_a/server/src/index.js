@@ -53,14 +53,27 @@ const users = [
   }
 ];
 
+// Simple session store for demo
+const sessions = new Map();
+
 // Check user login status endpoint
 app.get('/api/auth/status', (req, res) => {
-  // In a real app, verify user session/token
-  // For demo purposes, always return "logged in"
-  res.json({ 
-    isLoggedIn: true,
-    user: { id: '1', username: 'user' }
-  });
+  // Check for session cookie
+  const sessionId = req.cookies.sessionId;
+  
+  if (sessionId && sessions.has(sessionId)) {
+    // Session exists, user is logged in
+    const user = sessions.get(sessionId);
+    res.json({ 
+      isLoggedIn: true,
+      user: user
+    });
+  } else {
+    // No valid session, user is not logged in
+    res.json({ 
+      isLoggedIn: false 
+    });
+  }
 });
 
 // Login endpoint (simplified for demo)
@@ -69,7 +82,20 @@ app.post('/api/auth/login', (req, res) => {
   const user = users.find(u => u.username === username && u.password === password);
 
   if (user) {
-    // In production, use proper session management or JWT
+    // Create a simple session ID
+    const sessionId = Math.random().toString(36).substring(2, 15);
+    
+    // Store session
+    sessions.set(sessionId, { id: user.id, username: user.username });
+    
+    // Set session cookie
+    res.cookie('sessionId', sessionId, { 
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 * 1000 // 1 day
+    });
+    
     res.json({ 
       success: true, 
       user: { id: user.id, username: user.username }
@@ -81,7 +107,16 @@ app.post('/api/auth/login', (req, res) => {
 
 // Logout endpoint
 app.post('/api/auth/logout', (req, res) => {
-  // In production, invalidate user session/token
+  const sessionId = req.cookies.sessionId;
+  
+  if (sessionId) {
+    // Remove session
+    sessions.delete(sessionId);
+    
+    // Clear cookie
+    res.clearCookie('sessionId');
+  }
+  
   res.json({ success: true });
 });
 
