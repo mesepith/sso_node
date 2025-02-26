@@ -9,3 +9,7 @@ project_b/server/package-lock.json
 project_a/server/.env
 project_b/server/.env
 project_c/server/.env
+project_c/server/node_modules/
+project_c/server/package-lock.json
+project_c/client/node_modules/
+project_c/client/package-lock.json
