@@ -86,19 +86,23 @@ function App() {
         'width=500,height=600,left=100,top=100'
       );
       
+      if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+        alert('Popup was blocked by the browser. Please allow popups for this site.');
+        return;
+      }
+      
       // Setup message listener for the popup response
       window.addEventListener('message', handleAuthMessage);
       
       // Function to handle messages from the popup
       function handleAuthMessage(event) {
         // Validate the origin in a real application
+        console.log('Received message from popup:', event.data);
         
-        if (event.data && event.data.type === 'AUTH_SUCCESS') {
-          setUser(event.data.user);
-          setShowLoginModal(false);
-          
-          // Verify the token with the backend
-          verifyToken(event.data.user);
+        // Handle the AUTH_CODE message containing code and state
+        if (event.data && event.data.type === 'AUTH_CODE') {
+          // Exchange the code for a token via backend
+          exchangeCodeForToken(event.data.code, event.data.state);
           
           // Remove the event listener once we get a response
           window.removeEventListener('message', handleAuthMessage);
@@ -106,6 +110,27 @@ function App() {
       }
     } catch (error) {
       console.error('Login error:', error);
+    }
+  };
+  
+  // Function to exchange the auth code for a token
+  const exchangeCodeForToken = async (code, state) => {
+    try {
+      // Call the backend to exchange the code for a token
+      const response = await fetch(`http://localhost:3002/api/auth/callback?code=${code}&state=${state}`, {
+        credentials: 'include'
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setUser(data.user);
+        setShowLoginModal(false);
+      } else {
+        console.error('Token exchange failed:', data.error);
+      }
+    } catch (error) {
+      console.error('Error exchanging code for token:', error);
     }
   };
 

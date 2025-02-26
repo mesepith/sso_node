@@ -22,8 +22,8 @@ const oidcConfig = {
   clients: [{
     client_id: 'project-b',
     client_secret: 'project-b-secret',
-    redirect_uris: ['http://localhost:3002/callback'],
-    post_logout_redirect_uris: ['http://localhost:3002/'],
+    redirect_uris: ['http://localhost:3002/callback', 'http://localhost:3012/callback'],
+    post_logout_redirect_uris: ['http://localhost:3002/', 'http://localhost:3012/'],
     response_types: ['code'],
     grant_types: ['authorization_code', 'refresh_token'],
   }],
@@ -33,13 +33,51 @@ const oidcConfig = {
   pkce: {
     required: () => false,
   },
+  // We will handle custom interaction flows
   features: {
-    devInteractions: { enabled: false },
+    devInteractions: { enabled: true }, // Enable for now for debugging
+  },
+  claims: {
+    openid: ['sub'],
+    profile: ['name', 'username'],
+  },
+  findAccount: async (ctx, id) => {
+    // This would normally look up a real user account
+    return {
+      accountId: id,
+      async claims() {
+        return { sub: id, name: 'User', username: 'user' };
+      },
+    };
   },
 };
 
 // Initialize OIDC Provider
 const oidc = new Provider('http://localhost:3001', oidcConfig);
+
+// Handle custom interaction routes
+app.get('/interaction/:uid', async (req, res) => {
+  try {
+    const details = await oidc.interactionDetails(req, res);
+    console.log('Interaction details:', details);
+    
+    // For this demo, automatically login the user and consent
+    const result = {
+      login: {
+        accountId: '1',
+      },
+      consent: {
+        rejectedScopes: [],
+        rejectedClaims: [],
+      },
+    };
+    
+    await oidc.interactionFinished(req, res, result, { mergeWithLastSubmission: true });
+  } catch (err) {
+    console.error('Interaction error:', err);
+    res.status(500).json({ error: 'Failed to process interaction' });
+  }
+});
 
 // Mount OIDC Provider
 app.use('/oidc', oidc.callback());

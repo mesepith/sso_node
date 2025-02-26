@@ -34,8 +34,8 @@ async function initializeOidcClient() {
     oidcClient = new projectAIssuer.Client({
       client_id: 'project-b',
       client_secret: 'project-b-secret',
-      redirect_uris: ['http://localhost:3002/callback'],
-      post_logout_redirect_uris: ['http://localhost:3002/'],
+      redirect_uris: ['http://localhost:3002/callback', 'http://localhost:3012/callback'],
+      post_logout_redirect_uris: ['http://localhost:3002/', 'http://localhost:3012/'],
       response_types: ['code'],
     });
     
@@ -112,15 +112,73 @@ app.get('/api/auth/callback', async (req, res) => {
     
     const tokenSet = await oidcClient.callback('http://localhost:3002/callback', { code, state }, { nonce });
     
+    // Get user claims from the token
+    const claims = tokenSet.claims();
+    console.log('Received claims:', claims);
+    
+    // Create a session for the user
+    const sessionId = Math.random().toString(36).substring(2, 15);
+    const userData = { 
+      id: claims.sub || '1',
+      username: claims.username || 'user' 
+    };
+    
+    // Store the user in our session store
+    sessions.set(sessionId, userData);
+    
+    // Set session cookie
+    res.cookie('projectB_sessionId', sessionId, { 
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 * 1000 // 1 day
+    });
+    
     // In a real app, store the token securely and create a session
     res.json({ 
       success: true,
-      user: tokenSet.claims()
+      user: userData
     });
   } catch (error) {
     console.error('Callback error:', error);
     res.status(500).json({ error: 'Authentication failed' });
   }
+});
+
+// Handle OIDC callback from popup window
+app.get('/callback', (req, res) => {
+  // Render a simple HTML page that sends the auth result back to the opener
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Authentication Successful</title>
+      <script>
+        // Get the code and state from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        const state = urlParams.get('state');
+        
+        // Send message to opener window
+        if (window.opener) {
+          window.opener.postMessage({ 
+            type: 'AUTH_CODE', 
+            code, 
+            state 
+          }, '*');
+          
+          // Close the popup
+          window.close();
+        } else {
+          document.body.innerHTML = '<h3>Authentication successful. You can close this window.</h3>';
+        }
+      </script>
+    </head>
+    <body>
+      <h3>Authentication successful. Please wait...</h3>
+    </body>
+    </html>
+  `);
 });
 
 // Verify token endpoint
