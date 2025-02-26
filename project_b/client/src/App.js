@@ -6,9 +6,32 @@ function App() {
   const [showLoginModal, setShowLoginModal] = useState(false);
 
   useEffect(() => {
-    // Try silent authentication when the component mounts
-    checkSilentAuth();
+    // First check if we have a session in Project B
+    checkProjectBSession();
   }, []);
+
+  // Check if we're already logged in to Project B
+  const checkProjectBSession = async () => {
+    try {
+      const response = await fetch('http://localhost:3002/api/auth/status', {
+        credentials: 'include'
+      });
+      const data = await response.json();
+
+      if (data.isLoggedIn) {
+        // We have a session in Project B
+        setUser(data.user);
+        setShowLoginModal(false);
+        setLoading(false);
+      } else {
+        // No session in Project B, try silent auth with Project A
+        checkSilentAuth();
+      }
+    } catch (error) {
+      console.error('Project B session check error:', error);
+      checkSilentAuth();
+    }
+  };
 
   // Function to check if user is already logged in Project A
   const checkSilentAuth = async () => {
@@ -19,8 +42,25 @@ function App() {
       const data = await response.json();
 
       if (data.isLoggedIn) {
-        setUser(data.user);
-        setShowLoginModal(false);
+        // User is logged in to Project A, create a session in Project B
+        const verifyResponse = await fetch('http://localhost:3002/api/auth/verify-token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ 
+            token: 'token-from-silent-auth',
+            user: data.user
+          }),
+          credentials: 'include'
+        });
+        
+        const verifyData = await verifyResponse.json();
+        
+        if (verifyData.success) {
+          setUser(data.user);
+          setShowLoginModal(false);
+        }
       }
       
       setLoading(false);
@@ -77,7 +117,10 @@ function App() {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ token: 'token-from-auth-response' }),
+        body: JSON.stringify({ 
+          token: 'token-from-auth-response',
+          user: user
+        }),
         credentials: 'include'
       });
 
