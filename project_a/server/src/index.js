@@ -158,13 +158,25 @@ app.post('/api/auth/logout', async (req, res) => {
   // Also notify Project B about the logout
   try {
     // Make a request to Project B's logout endpoint
-    await axios.post('http://localhost:3002/api/auth/logout-from-project-a', {}, {
+    console.log('Sending logout notification to Project B');
+    const logoutResponse = await axios.post('http://localhost:3002/api/auth/logout-from-project-a', {}, {
       headers: {
         'Content-Type': 'application/json'
       }
     });
+    console.log('Project B logout response:', logoutResponse.data);
   } catch (error) {
-    console.error('Error notifying Project B about logout:', error);
+    console.error('Error notifying Project B about logout:', error.message);
+    // Try with different port in case the server is running on a different port
+    try {
+      await axios.post('http://localhost:3012/api/auth/logout-from-project-a', {}, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+    } catch (innerError) {
+      console.error('Second attempt to notify Project B failed:', innerError.message);
+    }
   }
   
   res.json({ success: true });

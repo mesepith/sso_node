@@ -75,19 +75,37 @@ function App() {
 
   const handleLogout = async () => {
     try {
+      console.log('Logging out from Project A');
+      
+      // Signal to other tabs/windows that logout occurred BEFORE making the API call
+      // This ensures Project B gets the notification even if the API call is slow
+      localStorage.setItem('projectA_logout', 'true');
+      
+      // Now perform the actual logout
       await fetch('http://localhost:3001/api/auth/logout', {
         method: 'POST',
         credentials: 'include'
       });
+      
       setUser(null);
       
-      // Signal to other tabs/windows that logout occurred
-      localStorage.setItem('projectA_logout', 'true');
+      // Also manually trigger Project B logout
+      try {
+        await fetch('http://localhost:3002/api/auth/logout-from-project-a', {
+          method: 'POST',
+          credentials: 'include'
+        });
+        console.log('Directly notified Project B about logout');
+      } catch (projectBError) {
+        console.error('Error directly notifying Project B:', projectBError);
+      }
       
-      // Reset the flag after a short delay
+      // Reset the flag after a longer delay to ensure it's picked up
       setTimeout(() => {
         localStorage.removeItem('projectA_logout');
-      }, 1000);
+      }, 3000);
+      
+      console.log('Logout completed');
     } catch (error) {
       console.error('Logout error:', error);
     }

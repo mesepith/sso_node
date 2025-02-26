@@ -12,9 +12,20 @@ function App() {
     // Add storage event listener for logout synchronization
     window.addEventListener('storage', handleStorageEvent);
     
-    // Cleanup listener on component unmount
+    // Check localStorage on mount for existing logout flag
+    if (localStorage.getItem('projectA_logout') === 'true') {
+      console.log('Found existing logout flag - logging out from Project B');
+      setUser(null);
+      localStorage.removeItem('projectA_logout');
+    }
+    
+    // Set up polling to check Project B session status
+    const intervalId = setInterval(checkProjectBSessionStatus, 5000);
+    
+    // Cleanup listeners and intervals on component unmount
     return () => {
       window.removeEventListener('storage', handleStorageEvent);
+      clearInterval(intervalId);
     };
   }, []);
   
@@ -23,6 +34,42 @@ function App() {
     if (event.key === 'projectA_logout' && event.newValue === 'true') {
       console.log('Detected logout from Project A - logging out from Project B');
       setUser(null);
+      
+      // Clear Project B session via API
+      fetch('http://localhost:3002/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+      }).catch(error => {
+        console.error('Error clearing Project B session:', error);
+      });
+    }
+  };
+  
+  // Periodically check if Project B session is still valid
+  const checkProjectBSessionStatus = async () => {
+    if (!user) return; // No need to check if already logged out
+    
+    try {
+      // Check if Project A session is still valid
+      const response = await fetch('http://localhost:3001/api/auth/status', {
+        credentials: 'include'
+      });
+      const data = await response.json();
+      
+      if (!data.isLoggedIn && user) {
+        console.log('Detected Project A session expired - logging out from Project B');
+        setUser(null);
+        
+        // Clear Project B session
+        fetch('http://localhost:3002/api/auth/logout', {
+          method: 'POST',
+          credentials: 'include'
+        }).catch(error => {
+          console.error('Error clearing Project B session:', error);
+        });
+      }
+    } catch (error) {
+      console.error('Error checking Project A session status:', error);
     }
   };
 
