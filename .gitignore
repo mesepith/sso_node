@@ -8,3 +8,4 @@ project_b/server/node_modules/
 project_b/server/package-lock.json
 project_a/server/.env
 project_b/server/.env
+project_c/server/.env

@@ -17,16 +17,12 @@ app.use(cors({
   credentials: true
 }));
 
+// Import the client configurations from config file
+import clients from './config/clients.js';
+
 // Basic configuration for the OIDC Provider
 const oidcConfig = {
-  clients: [{
-    client_id: 'project-b',
-    client_secret: 'project-b-secret',
-    redirect_uris: ['http://localhost:3002/callback', 'http://localhost:3012/callback'],
-    post_logout_redirect_uris: ['http://localhost:3002/', 'http://localhost:3012/'],
-    response_types: ['code'],
-    grant_types: ['authorization_code', 'refresh_token'],
-  }],
+  clients: clients, // Use the imported clients array
   cookies: {
     keys: ['some-secret-key'],
   },
@@ -155,29 +151,37 @@ app.post('/api/auth/logout', async (req, res) => {
     res.clearCookie('sessionId');
   }
   
-  // Also notify Project B about the logout
-  try {
-    // Make a request to Project B's logout endpoint
-    console.log('Sending logout notification to Project B');
-    const logoutResponse = await axios.post('http://localhost:3002/api/auth/logout-from-project-a', {}, {
+  // Notify all client applications about the logout
+  const clientEndpoints = [
+    // Project B endpoints
+    { url: 'http://localhost:3002/api/auth/logout-from-project-a', name: 'Project B (server)' },
+    
+    // Project C endpoints
+    { url: 'http://localhost:3003/api/auth/logout-from-project-a', name: 'Project C (server)' }
+  ];
+  
+  // Send logout notifications to all client applications
+  console.log('Sending logout notifications to all client applications');
+  
+  const notificationPromises = clientEndpoints.map(endpoint => {
+    return axios.post(endpoint.url, {}, {
       headers: {
         'Content-Type': 'application/json'
       }
+    })
+    .then(response => {
+      console.log(`${endpoint.name} logout response:`, response.data);
+      return { success: true, endpoint };
+    })
+    .catch(error => {
+      console.error(`Error notifying ${endpoint.name}:`, error.message);
+      return { success: false, endpoint, error: error.message };
     });
-    console.log('Project B logout response:', logoutResponse.data);
-  } catch (error) {
-    console.error('Error notifying Project B about logout:', error.message);
-    // Try with different port in case the server is running on a different port
-    try {
-      await axios.post('http://localhost:3012/api/auth/logout-from-project-a', {}, {
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-    } catch (innerError) {
-      console.error('Second attempt to notify Project B failed:', innerError.message);
-    }
-  }
+  });
+  
+  // Wait for all notifications to complete
+  const results = await Promise.allSettled(notificationPromises);
+  console.log('Logout notification results:', results.map(r => r.value || r.reason));
   
   res.json({ success: true });
 });

@@ -1,16 +1,20 @@
 # SSO Implementation with Node.js
 
-This project demonstrates SSO (Single Sign-On) authentication between two applications using OpenID Connect (OIDC).
+This project demonstrates SSO (Single Sign-On) authentication between multiple applications using OpenID Connect (OIDC).
 
 ## Project Structure
 
 - **Project A**: Acts as an OIDC Provider (identity provider)
-  - Frontend: React.js (port 3000)
+  - Frontend: React.js (port 3011)
   - Backend: Node.js with Express (port 3001)
 
 - **Project B**: Acts as an OIDC Client (service provider)
-  - Frontend: React.js (port 4000)
+  - Frontend: React.js (port 3012)
   - Backend: Node.js with Express (port 3002)
+  
+- **Project C**: Acts as an OIDC Client (service provider)
+  - Frontend: React.js (port 3013)
+  - Backend: Node.js with Express (port 3003)
 
 ## Authentication Flow
 
