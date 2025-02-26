@@ -256,6 +256,16 @@ app.post('/api/auth/logout', async (req, res) => {
   res.json({ success: true });
 });
 
+// Endpoint for Project A to trigger logout in Project B
+app.post('/api/auth/logout-from-project-a', (req, res) => {
+  console.log('Received logout request from Project A');
+  
+  // Clear all sessions (in a real app, you would only clear sessions for the specific user)
+  sessions.clear();
+  
+  res.json({ success: true });
+});
+
 app.listen(PORT, () => {
   console.log(`Project B server running on port ${PORT}`);
 });

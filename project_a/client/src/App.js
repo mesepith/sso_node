@@ -80,6 +80,14 @@ function App() {
         credentials: 'include'
       });
       setUser(null);
+      
+      // Signal to other tabs/windows that logout occurred
+      localStorage.setItem('projectA_logout', 'true');
+      
+      // Reset the flag after a short delay
+      setTimeout(() => {
+        localStorage.removeItem('projectA_logout');
+      }, 1000);
     } catch (error) {
       console.error('Logout error:', error);
     }

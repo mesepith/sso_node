@@ -144,7 +144,7 @@ app.post('/api/auth/login', (req, res) => {
 });
 
 // Logout endpoint
-app.post('/api/auth/logout', (req, res) => {
+app.post('/api/auth/logout', async (req, res) => {
   const sessionId = req.cookies.sessionId;
   
   if (sessionId) {
@@ -153,6 +153,18 @@ app.post('/api/auth/logout', (req, res) => {
     
     // Clear cookie
     res.clearCookie('sessionId');
+  }
+  
+  // Also notify Project B about the logout
+  try {
+    // Make a request to Project B's logout endpoint
+    await axios.post('http://localhost:3002/api/auth/logout-from-project-a', {}, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+  } catch (error) {
+    console.error('Error notifying Project B about logout:', error);
   }
   
   res.json({ success: true });

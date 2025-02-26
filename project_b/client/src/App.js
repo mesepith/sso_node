@@ -8,7 +8,23 @@ function App() {
   useEffect(() => {
     // First check if we have a session in Project B
     checkProjectBSession();
+    
+    // Add storage event listener for logout synchronization
+    window.addEventListener('storage', handleStorageEvent);
+    
+    // Cleanup listener on component unmount
+    return () => {
+      window.removeEventListener('storage', handleStorageEvent);
+    };
   }, []);
+  
+  // Handle logout events from localStorage (cross-tab communication)
+  const handleStorageEvent = (event) => {
+    if (event.key === 'projectA_logout' && event.newValue === 'true') {
+      console.log('Detected logout from Project A - logging out from Project B');
+      setUser(null);
+    }
+  };
 
   // Check if we're already logged in to Project B
   const checkProjectBSession = async () => {
