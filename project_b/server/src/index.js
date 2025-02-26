@@ -93,6 +93,7 @@ app.get('/api/auth/login', (req, res) => {
     scope: 'openid profile email',
     state,
     nonce,
+    redirect_uri: 'http://localhost:3012/callback'
   });
   
   res.json({ authUrl });
@@ -110,7 +111,7 @@ app.get('/api/auth/callback', async (req, res) => {
     const { nonce } = authStates.get(state);
     authStates.delete(state);
     
-    const tokenSet = await oidcClient.callback('http://localhost:3002/callback', { code, state }, { nonce });
+    const tokenSet = await oidcClient.callback('http://localhost:3012/callback', { code, state }, { nonce });
     
     // Get user claims from the token
     const claims = tokenSet.claims();
