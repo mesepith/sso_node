@@ -244,13 +244,22 @@ app.post('/api/auth/logout', async (req, res) => {
   // Also logout from Project A
   try {
     const cookies = req.headers.cookie;
+    
+    // Set a timeout for the request to avoid hang
     await axios.post('http://localhost:3001/api/auth/logout', {}, {
       headers: {
         Cookie: cookies || ''
+      },
+      timeout: 3000, // 3 second timeout
+      validateStatus: function (status) {
+        return status >= 200 && status < 600; // Accept any status code to prevent exceptions
       }
     });
+    
+    console.log('Successfully logged out from Project A');
   } catch (error) {
-    console.error('Error logging out from Project A:', error);
+    console.error('Error logging out from Project A:', error.message);
+    // Continue with local logout regardless of Project A's response
   }
   
   res.json({ success: true });

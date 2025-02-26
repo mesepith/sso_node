@@ -141,14 +141,19 @@ app.post('/api/auth/login', (req, res) => {
 
 // Logout endpoint
 app.post('/api/auth/logout', async (req, res) => {
+  console.log('Received logout request');
+  
   const sessionId = req.cookies.sessionId;
   
   if (sessionId) {
+    console.log(`Removing session: ${sessionId}`);
     // Remove session
     sessions.delete(sessionId);
     
     // Clear cookie
     res.clearCookie('sessionId');
+  } else {
+    console.log('No session found to remove');
   }
   
   // Notify all client applications about the logout
@@ -167,6 +172,10 @@ app.post('/api/auth/logout', async (req, res) => {
     return axios.post(endpoint.url, {}, {
       headers: {
         'Content-Type': 'application/json'
+      },
+      timeout: 3000, // 3 second timeout
+      validateStatus: function (status) {
+        return status >= 200 && status < 600; // Accept any status code to prevent exceptions
       }
     })
     .then(response => {
