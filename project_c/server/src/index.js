@@ -14,7 +14,21 @@ const PORT = process.env.PORT || 3003;
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
-  origin: process.env.CLIENT_ORIGIN || 'http://localhost:3013',
+  origin: function(origin, callback) {
+    // Allow requests from all project frontends
+    const allowedOrigins = [
+      'http://localhost:3013', // Project C frontend
+      'http://localhost:3011', // Project A frontend
+      'http://localhost:3012'  // Project B frontend
+    ];
+    
+    // Allow requests with no origin (like mobile apps, curl, etc.)
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(null, false);
+    }
+  },
   credentials: true
 }));
 
