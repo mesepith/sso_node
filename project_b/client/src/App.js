@@ -13,7 +13,9 @@ function App() {
   // Function to check if user is already logged in Project A
   const checkSilentAuth = async () => {
     try {
-      const response = await fetch('http://localhost:3002/api/silent-auth');
+      const response = await fetch('http://localhost:3002/api/silent-auth', {
+        credentials: 'include'
+      });
       const data = await response.json();
 
       if (data.isLoggedIn) {
@@ -32,7 +34,9 @@ function App() {
   const handleLoginClick = async () => {
     try {
       // Get the authentication URL from the backend
-      const response = await fetch('http://localhost:3002/api/auth/login');
+      const response = await fetch('http://localhost:3002/api/auth/login', {
+        credentials: 'include'
+      });
       const data = await response.json();
       
       // Open the authentication URL in a popup window
