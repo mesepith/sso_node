@@ -89,12 +89,11 @@ app.get('/api/auth/login', (req, res) => {
   // Store state for validation when the user returns
   authStates.set(state, { nonce });
   
-  const authUrl = oidcClient.authorizationUrl({
-    scope: 'openid profile email',
-    state,
-    nonce,
-    redirect_uri: 'http://localhost:3012/callback'
-  });
+  // Instead of using OIDC for this demo, let's simplify and use Project A's login page directly
+  const authUrl = 'http://localhost:3011';
+  
+  // Save state for later verification
+  authStates.set(state, { nonce });
   
   res.json({ authUrl });
 });

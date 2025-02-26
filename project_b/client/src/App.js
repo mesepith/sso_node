@@ -99,10 +99,14 @@ function App() {
         // Validate the origin in a real application
         console.log('Received message from popup:', event.data);
         
-        // Handle the AUTH_CODE message containing code and state
-        if (event.data && event.data.type === 'AUTH_CODE') {
-          // Exchange the code for a token via backend
-          exchangeCodeForToken(event.data.code, event.data.state);
+        // Handle the AUTH_SUCCESS message containing user data
+        if (event.data && event.data.type === 'AUTH_SUCCESS') {
+          // Update user state
+          setUser(event.data.user);
+          setShowLoginModal(false);
+          
+          // Create a session in project B
+          createSessionInProjectB(event.data.user);
           
           // Remove the event listener once we get a response
           window.removeEventListener('message', handleAuthMessage);
@@ -113,24 +117,29 @@ function App() {
     }
   };
   
-  // Function to exchange the auth code for a token
-  const exchangeCodeForToken = async (code, state) => {
+  // Function to create a session in Project B
+  const createSessionInProjectB = async (user) => {
     try {
-      // Call the backend to exchange the code for a token
-      const response = await fetch(`http://localhost:3002/api/auth/callback?code=${code}&state=${state}`, {
+      // Call the verification endpoint to create a session
+      const response = await fetch('http://localhost:3002/api/auth/verify-token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          user: user
+        }),
         credentials: 'include'
       });
       
       const data = await response.json();
       
-      if (data.success) {
-        setUser(data.user);
-        setShowLoginModal(false);
-      } else {
-        console.error('Token exchange failed:', data.error);
+      if (!data.success) {
+        console.error('Failed to create session in Project B');
+        setUser(null);
       }
     } catch (error) {
-      console.error('Error exchanging code for token:', error);
+      console.error('Error creating session:', error);
     }
   };
 

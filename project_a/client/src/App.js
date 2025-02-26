@@ -56,8 +56,13 @@ function App() {
             type: 'AUTH_SUCCESS',
             user: data.user
           }, '*');
-          // Close the popup
-          window.close();
+          
+          console.log('Sending auth success to opener:', data.user);
+          
+          // Close the popup after a short delay to ensure the message is sent
+          setTimeout(() => {
+            window.close();
+          }, 500);
         }
       } else {
         alert('Login failed: ' + data.message);
