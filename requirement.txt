@@ -1,0 +1,75 @@
+My Requirement: Seamless Login for Project B via Project A (SSO)
+Overview
+I have two projects, both using:
+
+Frontend: React.js
+
+Backend: Node.js with Express
+
+Project A → Handles user authentication (OIDC Provider).
+
+Project B → Needs authentication from Project A.
+
+My requirement is that when a user is already logged into Project A and visits Project B, they should be automatically logged into Project B without manually logging in again.
+
+Additionally, Project B should show a login modal instead of redirecting to Project A’s login page, but it should not use an iframe due to modern browser restrictions on embedding authentication flows in iframes. Instead, I will use a popup window for authentication.
+
+Step-by-Step Authentication Flow
+✅ Scenario 1: First-Time Login (With Login Modal in Project B via Popup Window)
+When a user visits Project B, they see a "Login with Project A" button.
+Clicking this button opens a new popup window where Project A’s login page is loaded.
+The user enters their Project A credentials and logs in.
+After successful login, Project A’s React frontend sends an authentication token to the popup window.
+The popup window then sends the token back to Project B’s main window using window.postMessage().
+Project B receives the authentication token, sends it to its Node.js backend for verification, and logs the user in.
+The popup window closes automatically.
+The user is now authenticated in Project B.
+✅ Scenario 2: User Already Logged into Project A (Silent Authentication via OpenID Connect)
+If the user is already logged into Project A and visits Project B, Project B should detect this automatically.
+Project B’s React frontend makes a background request (/silent-auth) to its Node.js backend.
+Project B’s backend calls Project A’s authentication API to check if the user is logged in.
+If the user is already logged in, Project B automatically logs them in without showing the login modal.
+If the user is not logged in, the login modal appears, and the user follows Scenario 1.
+✅ Scenario 3: Logout Handling
+If the user logs out from Project A, they should also be logged out from Project B.
+If the user logs out from Project B, they should also be logged out from Project A.
+After logout, the user should be redirected to Project B’s home page.
+How I Am Achieving This
+1️⃣ Using OpenID Connect (OIDC)
+Project A acts as the OIDC Provider (Node.js backend handles authentication, React frontend handles UI).
+Project B acts as an OIDC Client, requesting authentication from Project A.
+2️⃣ Enabling Silent Authentication (SSO)
+When a user visits Project B, it automatically checks if the user is logged into Project A.
+This is done by calling Project A’s authentication API from Project B’s backend (Node.js).
+If the user is already authenticated, Project B logs them in automatically.
+3️⃣ Implementing a Login Modal with a Popup Instead of Redirect
+Instead of redirecting users to Project A’s login page, Project B opens a new popup window.
+Project A’s login page loads inside the popup.
+After successful login, Project A’s frontend sends an authentication token back to Project B via window.postMessage().
+Project B’s React frontend receives the token, sends it to its Node.js backend, which verifies it and logs the user in.
+The popup window closes automatically after successful login.
+4️⃣ Implementing Logout Sync
+When a user logs out from Project A, it should also clear the session in Project B.
+When a user logs out from Project B, it should redirect them to log out from Project A.
+The logout process will be handled by the Node.js backend of both projects.
+My Final Authentication Flow
+Step 1: Check for Silent Authentication (Auto-Login)
+When a user visits Project B, the React frontend calls /silent-auth on Project B’s backend.
+Project B’s backend checks with Project A’s backend if the user is already logged in.
+If yes, Project B’s backend logs the user in automatically (without showing the login modal).
+If no, the login modal will be shown.
+Step 2: Login Using a Popup Modal in Project B
+The user clicks “Login with Project A” in Project B.
+A new popup window opens with Project A’s login page.
+The user logs into Project A inside the popup window.
+After successful login, Project A’s frontend sends the authentication token back to the popup window.
+The popup window uses window.opener.postMessage() to send the token to Project B’s main window.
+Project B receives the token, verifies it via its backend, and logs the user in.
+The popup window automatically closes.
+Step 3: Maintain User Session in Project B
+After login, Project B stores the authentication token in a secure session (using HTTP-only cookies or JWT tokens).
+The user remains logged in for future visits unless they log out.
+Step 4: Logout Handling
+When the user logs out from Project A, they are also logged out from Project B.
+When the user logs out from Project B, they are also logged out from Project A.
+Both logouts trigger session invalidation in their respective backends.
